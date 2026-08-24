@@ -19,7 +19,7 @@ include("${VITASDK}/share/vita.cmake" REQUIRED)
 
 set(VITA_APP_NAME "VitaMaps")
 set(VITA_TITLEID "VMAP00001")
-set(VITA_VERSION "01.12")
+set(VITA_VERSION "01.13")
 
 set(VITAMAPS_HTTPS_PACKAGE
     "${CMAKE_CURRENT_SOURCE_DIR}/external/vita-https"

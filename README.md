@@ -4,6 +4,10 @@ VitaMaps is a native, GPU-rendered map viewer for PlayStation Vita homebrew.
 It uses VitaSDK and vita2d directly: there is no WebView, embedded browser,
 HTML, or JavaScript map engine.
 
+- Current package version: 01.13
+- Title ID: `VMAP00001`
+- License: [GPL-3.0-only](LICENSE)
+
 The current milestone is an installable raster-map viewer with continuous
 Web Mercator navigation, asynchronous tile loading, progressive adjacent-level
 fallback, and bounded multi-level caches. It is intentionally structured as
@@ -55,14 +59,14 @@ image demo.
   visibility, explicit open/closed geometry, per-segment and total geodesic
   distance, and spherical polygon area after a route is closed.
 - Italian, English, Japanese, Korean, Simplified Chinese, Traditional Chinese,
-  and Russian UI localization, with a default mode that follows the console.
-  Only the selected language is shown in the text-entry screen; no
-  multi-language font-test copy is rendered there.
+  Russian, French, Spanish, German, and Portuguese UI localization, with a
+  default mode that follows the console. Search result language and the Vita
+  IME follow the active UI language. Only the selected language is shown in
+  the text-entry screen; no multi-language font-test copy is rendered there.
 - Coordinate, city, locality, and address search through the native Vita IME.
   Its keyboard language follows the selected UI language. Coordinates and
-  7,342 bundled city names resolve
-  locally; other explicit searches use a rate-limited asynchronous geocoder,
-  then enter center-crosshair pin mode.
+  7,342 bundled city names resolve locally; other explicit searches use a
+  rate-limited asynchronous geocoder, then enter center-crosshair pin mode.
 - Animated cyan/white loaders over neutral missing-tile placeholders; cached
   parents remain preferred whenever available.
 - Graphically drawn Cross, Circle, Square, and Triangle command caps plus
@@ -100,6 +104,11 @@ Requirements:
 - a current VitaSDK toolchain with Mbed TLS 3.x;
 - VitaSDK packages for vita2d, libpng, zlib, JPEG, FreeType, bzip2, and pthread;
 - network access during the one-time `vita-https` dependency bootstrap.
+
+After building, transfer `build/VitaMaps.vpk` to the console and install it
+with VitaShell. VitaMaps stores settings, logs, pins, geocoding results, and
+map caches under `ux0:data/VitaMaps/`; uninstalling the LiveArea application
+does not necessarily remove that data directory.
 
 For a diagnostic build, still optimized with `-O3` but including debug symbols
 and persistent logging enabled by default on a new installation:
@@ -145,9 +154,9 @@ its final edge, includes it in the perimeter, and enables the area result.
 
 All motion uses elapsed time rather than a fixed number of frames and clamps
 late-frame deltas, so disk or network stalls do not make panels jump. The
-default is the complete smooth motion system; Settings -> Animazioni
-interfaccia -> Ridotte removes ambient pulses and snaps transitions for users
-who prefer reduced motion.
+default is the complete smooth motion system; Settings -> Interface animations
+-> Reduced removes ambient pulses and snaps transitions for users who prefer
+reduced motion.
 
 ## Diagnostics
 
@@ -249,42 +258,29 @@ fully styled road and locality labels.
 
 ## Project status
 
-The Release and Debug builds and VPK packaging are validated locally with
-VitaSDK. On-device diagnostics from 01.01 proved that graphics, PGF and HTTPS
-initialized correctly, then isolated the failure to libstdc++ rejecting
-`std::thread` at runtime. Version 01.02 replaced that path, but its requested
-kernel priority was rejected on hardware with
-`SCE_KERNEL_ERROR_ILLEGAL_PRIORITY`. Version 01.03 uses VitaSDK's documented
-`0x10000100` priority token and was confirmed to reach the interactive map on
-real hardware. That pass exposed swapped tile color channels, scaled PGF text,
-and fractional tile seams. Version 01.04 addresses those defects and adds the
-multilingual font pipeline, per-style caches, strict viewport-first scheduling,
-four styles, and the configurable full-screen HUD. Version 01.05 adds the
-crosshair pin workflow, persistent list editor, geometry summaries, direct
-multilingual Vita IME coordinate search, revised control map, and policy-aware
-offline-area planner. Version 01.06 adds the shared VitaTube-style motion
-system and fixes fractional zoom choosing undersized raster labels. Version
-01.07 added the independently scalable, decluttered native populated-place
-overlay. Version 01.08 removes the bulk/offline planner, makes normal tile-cache
-entries persistent until budget eviction, enables local plus asynchronous
-place/address search, adds missing-tile loaders, and replaces fragile legend
-glyphs with drawn button symbols. Version 01.09 removes the experimental native
-city-name overlay completely, leaving only labels baked into provider tiles.
-Version 01.10 adds persistent UI-language selection, localizes all interactive
-map, list, settings, search, and text-entry copy, and limits the IME to the
-selected language instead of presenting multiple language samples. Version
-01.11 replaces the static cache-budget footer with live cache size/tile status
-and adds confirmed worker-coordinated clearing of disk, compressed RAM, and GPU
-tile caches. Version 01.12 adds persistent per-list map visibility, explicit
-route closure with corrected perimeter/area semantics, distance labels for
-every segment, map bearing across coordinate conversion and tile scheduling,
-two-finger/right-stick rotation, and a smooth north-up HUD control. The exact
-01.12 VPK still requires an
-on-device visual and interaction pass; local packaging alone is not claimed as
-hardware proof.
+Version 01.03 was confirmed to reach the interactive map on PS Vita hardware.
+Subsequent milestones fixed tile color channels, fractional seams, text sizing,
+startup failures, and Vita kernel-thread compatibility, then added the current
+cache, search, pin-list, geometry, rotation, HUD, animation, and localization
+systems. Version 01.13 adds French, Spanish, German, and Portuguese throughout
+the UI, Vita IME, console-language detection, and geocoder language negotiation.
 
-## License
+Release and Debug 01.13 builds and VPK packaging are validated locally with
+VitaSDK. The exact 01.13 package still requires a complete on-device visual,
+network, cache, input, and persistence pass; local packaging is not presented
+as hardware proof.
 
-VitaMaps is licensed under GPL-3.0-only. Third-party components retain their
-own licenses; `vita-https` is GPL-3.0-only and includes its dependency notices
-and pinned source provenance.
+## License and attribution
+
+Copyright (C) 2026 spyro-98.
+
+VitaMaps source code is licensed under
+[GNU GPL version 3 only](LICENSE). Third-party components and assets retain
+their own terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md), the
+bundled [Inter OFL text](assets/fonts/Inter-OFL.txt), and the pinned
+[`vita-https`](https://github.com/spyro-98/vita-https) submodule notices.
+
+OpenStreetMap data attribution remains visible inside the map renderer. The
+project is not affiliated with or endorsed by Sony Interactive Entertainment,
+OpenStreetMap Foundation, OpenStreetMap France, CyclOSM, Humanitarian
+OpenStreetMap Team, Natural Earth, or NASA.

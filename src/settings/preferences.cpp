@@ -214,7 +214,7 @@ int preferences_ui_language() {
 
 int preferences_set_ui_language(int index) {
     if (!g_loaded) preferences_init();
-    if (index < 0 || index > 7) return -1;
+    if (index < 0 || index >= 12) return -1;
     const std::uint32_t next =
         (g_flags & ~kUiLanguageMask) |
         (static_cast<std::uint32_t>(index) << kUiLanguageShift);

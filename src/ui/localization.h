@@ -107,7 +107,7 @@ enum class UiText {
 };
 
 // 0 = console language, followed by the explicitly selectable languages.
-constexpr int kUiLanguageSettingCount = 8;
+constexpr int kUiLanguageSettingCount = 12;
 
 void ui_localization_init(int language_setting);
 int ui_language_setting();

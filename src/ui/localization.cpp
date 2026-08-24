@@ -19,6 +19,10 @@ enum class Language {
     ChineseSimplified,
     ChineseTraditional,
     Russian,
+    French,
+    Spanish,
+    German,
+    Portuguese,
 };
 
 constexpr std::size_t kTextCount = static_cast<std::size_t>(UiText::Count);
@@ -102,6 +106,168 @@ constexpr const char *kEnglish[] = {
     "Cache error: 0x%08X", "clear", "show/hide", "close path",
     "open path", "closed", "At least 3 points are needed to close the path",
     "start", "north", "rotate",
+};
+
+constexpr const char *kFrench[] = {
+    "Saisie de texte", "Texte trop long : raccourcissez-le puis validez",
+    "Validez avec le clavier Vita ou fermez pour annuler",
+    "Erreur de clavier : 0x%08X",
+    "Mode épingle : déplacez la carte et appuyez sur X",
+    "Liste pleine : 64 épingles maximum", "Point %u enregistré dans %s",
+    "Modification en RAM uniquement ; erreur d’enregistrement 0x%08X",
+    "Recherche déjà en cours", "Rechercher des coordonnées, un lieu ou une adresse",
+    "Coordonnées trouvées : confirmez l’épingle avec X",
+    "Trouvé localement : %s · confirmez avec X",
+    "Impossible de lancer la recherche", "Recherche du lieu…",
+    "Aucun résultat", "Recherche indisponible sans connexion",
+    "Échec de la recherche : 0x%08X HTTP %ld",
+    "Cache : %s · confirmez avec X", "Trouvé : %s · confirmez avec X",
+    "Nouvelle liste", "Liste créée", "Impossible de créer la liste",
+    "Renommer la liste", "Liste renommée",
+    "La seule liste ne peut pas être supprimée",
+    "Appuyez à nouveau sur SELECT pour supprimer la liste", "Liste supprimée",
+    "Point centré ; X ajoute une nouvelle étape", "Renommer le point",
+    "Point renommé", "Appuyez à nouveau sur CARRÉ pour supprimer le point",
+    "Point supprimé", "Mode épingle terminé",
+    "Centre %.5f, %.5f  z%.2f t%d  rot %.0f°", "en ligne", "hors ligne",
+    "enregistrer", "épingle", "terminer", "listes", "rechercher", "options",
+    "zoom", "ÉPINGLE → %s | %u points | %s", "Listes et itinéraires",
+    "%u épingles · %s%s", " · ACTIVE", "ouvrir", "nouvelle", "renommer",
+    "supprimer", "carte", "%u étapes · à vol d’oiseau %s",
+    "%u étapes · à vol d’oiseau %s · superficie %s",
+    "Adresses et itinéraires : service indisponible",
+    "Liste vide : revenez à la carte et appuyez sur X pour ajouter des épingles",
+    "centrer", "réordonner", "VitaMaps - Paramètres", "Style de carte",
+    "Langue de l’interface", "Comportement du HUD", "Viseur central",
+    "Unités de mesure", "Animations de l’interface",
+    "Journaux persistants sur le stockage Vita", "Auto : 2,5 s",
+    "Toujours visible", "Visible", "Masqué", "Impérial", "Métrique",
+    "Réduites", "Fluides", "Activé", "Désactivé", "Enregistré",
+    "Erreur : 0x%08X", "sélectionner/modifier", "modifier", "retour", "quitter",
+    "Favoris", "Point %u", "Cache des cartes", "Lecture…", "%s · %u tuiles",
+    "Appuyez à nouveau sur X pour effacer", "Effacement…", "Cache effacé",
+    "Erreur de cache : 0x%08X", "effacer", "afficher/masquer",
+    "fermer le tracé", "ouvrir le tracé", "fermé",
+    "Il faut au moins 3 points pour fermer le tracé", "départ", "nord",
+    "pivoter",
+};
+
+constexpr const char *kSpanish[] = {
+    "Entrada de texto", "Texto demasiado largo: acórtalo y confirma",
+    "Confirma con el teclado de Vita o ciérralo para cancelar",
+    "Error del teclado: 0x%08X", "Modo de marcador: mueve el mapa y pulsa X",
+    "Lista llena: máximo 64 marcadores", "Punto %u guardado en %s",
+    "Cambio solo en RAM; error al guardar 0x%08X", "Ya hay una búsqueda en curso",
+    "Buscar coordenadas, lugar o dirección",
+    "Coordenadas encontradas: confirma el marcador con X",
+    "Encontrado localmente: %s · confirma con X",
+    "No se puede iniciar la búsqueda", "Buscando lugar…",
+    "No se encontraron resultados", "Búsqueda no disponible sin conexión",
+    "Error de búsqueda: 0x%08X HTTP %ld", "Caché: %s · confirma con X",
+    "Encontrado: %s · confirma con X", "Nueva lista", "Lista creada",
+    "No se puede crear la lista", "Renombrar lista", "Lista renombrada",
+    "No se puede eliminar la única lista",
+    "Pulsa SELECT de nuevo para eliminar la lista", "Lista eliminada",
+    "Punto centrado; X añade una nueva parada", "Renombrar punto",
+    "Punto renombrado", "Pulsa CUADRADO de nuevo para eliminar el punto",
+    "Punto eliminado", "Modo de marcador finalizado",
+    "Centro %.5f, %.5f  z%.2f t%d  rot %.0f°", "en línea", "sin conexión",
+    "guardar", "marcador", "terminar", "listas", "buscar", "opciones", "zoom",
+    "MARCADOR → %s | %u puntos | %s", "Listas y rutas",
+    "%u marcadores · %s%s", " · ACTIVA", "abrir", "nueva", "renombrar",
+    "eliminar", "mapa", "%u paradas · línea recta %s",
+    "%u paradas · línea recta %s · área %s",
+    "Direcciones e indicaciones: servicio no disponible",
+    "Lista vacía: vuelve al mapa y pulsa X para añadir marcadores", "centrar",
+    "reordenar", "VitaMaps - Ajustes", "Estilo del mapa", "Idioma de la interfaz",
+    "Comportamiento del HUD", "Mira central", "Unidades de medida",
+    "Animaciones de la interfaz", "Registro persistente en el almacenamiento Vita",
+    "Auto: 2,5 s", "Siempre visible", "Visible", "Oculto", "Imperial", "Métrico",
+    "Reducidas", "Fluidas", "Activado", "Desactivado", "Guardado",
+    "Error: 0x%08X", "seleccionar/cambiar", "cambiar", "volver", "salir",
+    "Favoritos", "Punto %u", "Caché de mapas", "Leyendo…", "%s · %u teselas",
+    "Pulsa X de nuevo para borrar", "Borrando…", "Caché borrada",
+    "Error de caché: 0x%08X", "borrar", "mostrar/ocultar", "cerrar trazado",
+    "abrir trazado", "cerrado", "Se necesitan al menos 3 puntos para cerrar el trazado",
+    "inicio", "norte", "girar",
+};
+
+constexpr const char *kGerman[] = {
+    "Texteingabe", "Text zu lang: kürzen und bestätigen",
+    "Mit der Vita-Tastatur bestätigen oder zum Abbrechen schließen",
+    "Tastaturfehler: 0x%08X", "Pin-Modus: Karte bewegen und X drücken",
+    "Liste voll: maximal 64 Pins", "Punkt %u in %s gespeichert",
+    "Änderung nur im RAM; Speicherfehler 0x%08X", "Suche läuft bereits",
+    "Koordinaten, Ort oder Adresse suchen",
+    "Koordinaten gefunden: Pin mit X bestätigen",
+    "Lokal gefunden: %s · mit X bestätigen", "Suche konnte nicht gestartet werden",
+    "Ort wird gesucht…", "Keine Ergebnisse gefunden",
+    "Suche ohne Verbindung nicht verfügbar", "Suche fehlgeschlagen: 0x%08X HTTP %ld",
+    "Cache: %s · mit X bestätigen", "Gefunden: %s · mit X bestätigen",
+    "Neue Liste", "Liste erstellt", "Liste konnte nicht erstellt werden",
+    "Liste umbenennen", "Liste umbenannt", "Die einzige Liste kann nicht gelöscht werden",
+    "SELECT erneut drücken, um die Liste zu löschen", "Liste gelöscht",
+    "Punkt zentriert; X fügt einen neuen Stopp hinzu", "Punkt umbenennen",
+    "Punkt umbenannt", "QUADRAT erneut drücken, um den Punkt zu löschen",
+    "Punkt gelöscht", "Pin-Modus beendet",
+    "Mitte %.5f, %.5f  z%.2f t%d  Drehung %.0f°", "online", "offline",
+    "speichern", "Pin", "beenden", "Listen", "suchen", "Optionen", "Zoom",
+    "PIN → %s | %u Punkte | %s", "Listen und Routen", "%u Pins · %s%s",
+    " · AKTIV", "öffnen", "neu", "umbenennen", "löschen", "Karte",
+    "%u Stopps · Luftlinie %s", "%u Stopps · Luftlinie %s · Fläche %s",
+    "Adressen und Wegbeschreibung: Dienst nicht verfügbar",
+    "Leere Liste: zur Karte zurückkehren und X drücken, um Pins hinzuzufügen",
+    "zentrieren", "sortieren", "VitaMaps - Einstellungen", "Kartenstil",
+    "UI-Sprache", "HUD-Verhalten", "Fadenkreuz", "Maßeinheiten",
+    "Oberflächenanimationen", "Dauerhafte Protokolle im Vita-Speicher",
+    "Auto: 2,5 s", "Immer sichtbar", "Sichtbar", "Ausgeblendet", "Imperial",
+    "Metrisch", "Reduziert", "Flüssig", "Aktiviert", "Deaktiviert", "Gespeichert",
+    "Fehler: 0x%08X", "auswählen/ändern", "ändern", "zurück", "beenden",
+    "Favoriten", "Punkt %u", "Karten-Cache", "Wird gelesen…", "%s · %u Kacheln",
+    "X erneut drücken, um zu leeren", "Wird geleert…", "Cache geleert",
+    "Cache-Fehler: 0x%08X", "leeren", "anzeigen/ausblenden", "Pfad schließen",
+    "Pfad öffnen", "geschlossen", "Zum Schließen sind mindestens 3 Punkte nötig",
+    "Start", "Norden", "drehen",
+};
+
+constexpr const char *kPortuguese[] = {
+    "Introdução de texto", "Texto demasiado longo: encurte-o e confirme",
+    "Confirme com o teclado da Vita ou feche para cancelar",
+    "Erro do teclado: 0x%08X", "Modo de marcador: mova o mapa e prima X",
+    "Lista cheia: máximo de 64 marcadores", "Ponto %u guardado em %s",
+    "Alteração apenas na RAM; erro ao guardar 0x%08X", "Pesquisa já em curso",
+    "Pesquisar coordenadas, local ou endereço",
+    "Coordenadas encontradas: confirme o marcador com X",
+    "Encontrado localmente: %s · confirme com X",
+    "Não foi possível iniciar a pesquisa", "A pesquisar local…",
+    "Nenhum resultado encontrado", "Pesquisa indisponível sem ligação",
+    "Falha na pesquisa: 0x%08X HTTP %ld", "Cache: %s · confirme com X",
+    "Encontrado: %s · confirme com X", "Nova lista", "Lista criada",
+    "Não foi possível criar a lista", "Mudar o nome da lista", "Nome da lista alterado",
+    "A única lista não pode ser eliminada",
+    "Prima SELECT novamente para eliminar a lista", "Lista eliminada",
+    "Ponto centrado; X adiciona uma nova paragem", "Mudar o nome do ponto",
+    "Nome do ponto alterado", "Prima QUADRADO novamente para eliminar o ponto",
+    "Ponto eliminado", "Modo de marcador terminado",
+    "Centro %.5f, %.5f  z%.2f t%d  rot %.0f°", "online", "offline",
+    "guardar", "marcador", "terminar", "listas", "pesquisar", "opções", "zoom",
+    "MARCADOR → %s | %u pontos | %s", "Listas e percursos",
+    "%u marcadores · %s%s", " · ATIVA", "abrir", "nova", "mudar nome",
+    "eliminar", "mapa", "%u paragens · linha reta %s",
+    "%u paragens · linha reta %s · área %s",
+    "Endereços e indicações: serviço indisponível",
+    "Lista vazia: volte ao mapa e prima X para adicionar marcadores", "centrar",
+    "reordenar", "VitaMaps - Definições", "Estilo do mapa", "Idioma da interface",
+    "Comportamento do HUD", "Mira central", "Unidades de medida",
+    "Animações da interface", "Registos persistentes no armazenamento da Vita",
+    "Auto: 2,5 s", "Sempre visível", "Visível", "Oculto", "Imperial", "Métrico",
+    "Reduzidas", "Suaves", "Ativado", "Desativado", "Guardado",
+    "Erro: 0x%08X", "selecionar/alterar", "alterar", "voltar", "sair",
+    "Favoritos", "Ponto %u", "Cache de mapas", "A ler…", "%s · %u tiles",
+    "Prima X novamente para limpar", "A limpar…", "Cache limpa",
+    "Erro da cache: 0x%08X", "limpar", "mostrar/ocultar", "fechar percurso",
+    "abrir percurso", "fechado", "São necessários pelo menos 3 pontos para fechar o percurso",
+    "início", "norte", "rodar",
 };
 
 constexpr const char *kJapanese[] = {
@@ -271,6 +437,47 @@ constexpr const char *kRussian[] = {
     "начало", "север", "вращать",
 };
 
+constexpr bool is_format_modifier(char value) {
+    return (value >= '0' && value <= '9') || value == '.' || value == '-' ||
+           value == '+' || value == ' ' || value == '#';
+}
+
+constexpr bool same_format_contract(const char *left, const char *right) {
+    while (true) {
+        while (*left != '\0' && *left != '%') ++left;
+        while (*right != '\0' && *right != '%') ++right;
+        if (*left == '\0' || *right == '\0') return *left == *right;
+
+        ++left;
+        ++right;
+        if (*left == '%' || *right == '%') {
+            if (*left != *right) return false;
+            ++left;
+            ++right;
+            continue;
+        }
+        while (is_format_modifier(*left)) ++left;
+        while (is_format_modifier(*right)) ++right;
+        if ((*left == 'l') != (*right == 'l')) return false;
+        if (*left == 'l') ++left;
+        if (*right == 'l') ++right;
+        if (*left == '\0' || *left != *right) return false;
+        ++left;
+        ++right;
+    }
+}
+
+template <std::size_t N>
+constexpr bool format_contracts_match(const char *const (&reference)[N],
+                                      const char *const (&translation)[N]) {
+    for (std::size_t index = 0; index < N; ++index) {
+        if (!same_format_contract(reference[index], translation[index])) {
+            return false;
+        }
+    }
+    return true;
+}
+
 static_assert(std::size(kItalian) == kTextCount);
 static_assert(std::size(kEnglish) == kTextCount);
 static_assert(std::size(kJapanese) == kTextCount);
@@ -278,12 +485,31 @@ static_assert(std::size(kKorean) == kTextCount);
 static_assert(std::size(kChineseSimplified) == kTextCount);
 static_assert(std::size(kChineseTraditional) == kTextCount);
 static_assert(std::size(kRussian) == kTextCount);
+static_assert(std::size(kFrench) == kTextCount);
+static_assert(std::size(kSpanish) == kTextCount);
+static_assert(std::size(kGerman) == kTextCount);
+static_assert(std::size(kPortuguese) == kTextCount);
+static_assert(format_contracts_match(kEnglish, kItalian));
+static_assert(format_contracts_match(kEnglish, kJapanese));
+static_assert(format_contracts_match(kEnglish, kKorean));
+static_assert(format_contracts_match(kEnglish, kChineseSimplified));
+static_assert(format_contracts_match(kEnglish, kChineseTraditional));
+static_assert(format_contracts_match(kEnglish, kRussian));
+static_assert(format_contracts_match(kEnglish, kFrench));
+static_assert(format_contracts_match(kEnglish, kSpanish));
+static_assert(format_contracts_match(kEnglish, kGerman));
+static_assert(format_contracts_match(kEnglish, kPortuguese));
 
 Language system_language() {
     int language = SCE_SYSTEM_PARAM_LANG_ENGLISH_US;
     sceRegMgrSystemParamGetInt(SCE_SYSTEM_PARAM_ID_LANG, &language);
     switch (language) {
     case SCE_SYSTEM_PARAM_LANG_ITALIAN: return Language::Italian;
+    case SCE_SYSTEM_PARAM_LANG_FRENCH: return Language::French;
+    case SCE_SYSTEM_PARAM_LANG_SPANISH: return Language::Spanish;
+    case SCE_SYSTEM_PARAM_LANG_GERMAN: return Language::German;
+    case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_PT:
+    case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_BR: return Language::Portuguese;
     case SCE_SYSTEM_PARAM_LANG_JAPANESE: return Language::Japanese;
     case SCE_SYSTEM_PARAM_LANG_KOREAN: return Language::Korean;
     case SCE_SYSTEM_PARAM_LANG_CHINESE_S: return Language::ChineseSimplified;
@@ -302,6 +528,10 @@ Language explicit_language(int setting) {
     case 5: return Language::ChineseSimplified;
     case 6: return Language::ChineseTraditional;
     case 7: return Language::Russian;
+    case 8: return Language::French;
+    case 9: return Language::Spanish;
+    case 10: return Language::German;
+    case 11: return Language::Portuguese;
     default: return system_language();
     }
 }
@@ -314,6 +544,10 @@ const char *const *table() {
     case Language::ChineseSimplified: return kChineseSimplified;
     case Language::ChineseTraditional: return kChineseTraditional;
     case Language::Russian: return kRussian;
+    case Language::French: return kFrench;
+    case Language::Spanish: return kSpanish;
+    case Language::German: return kGerman;
+    case Language::Portuguese: return kPortuguese;
     case Language::English: return kEnglish;
     }
     return kEnglish;
@@ -336,21 +570,38 @@ const char *ui_text(UiText text) {
 const char *ui_language_name(int language_setting) {
     const int setting = std::clamp(language_setting, 0,
                                    kUiLanguageSettingCount - 1);
-    static constexpr const char *names[][8] = {
+    static constexpr const char *names[][kUiLanguageSettingCount] = {
         {"Sistema", "Italiano", "Inglese", "Giapponese", "Coreano",
-         "Cinese semplificato", "Cinese tradizionale", "Russo"},
+         "Cinese semplificato", "Cinese tradizionale", "Russo", "Francese",
+         "Spagnolo", "Tedesco", "Portoghese"},
         {"System", "Italian", "English", "Japanese", "Korean",
-         "Simplified Chinese", "Traditional Chinese", "Russian"},
+         "Simplified Chinese", "Traditional Chinese", "Russian", "French",
+         "Spanish", "German", "Portuguese"},
         {"システム", "イタリア語", "英語", "日本語", "韓国語",
-         "簡体字中国語", "繁体字中国語", "ロシア語"},
+         "簡体字中国語", "繁体字中国語", "ロシア語", "フランス語",
+         "スペイン語", "ドイツ語", "ポルトガル語"},
         {"시스템", "이탈리아어", "영어", "일본어", "한국어",
-         "중국어 간체", "중국어 번체", "러시아어"},
+         "중국어 간체", "중국어 번체", "러시아어", "프랑스어", "스페인어",
+         "독일어", "포르투갈어"},
         {"系统", "意大利语", "英语", "日语", "韩语", "简体中文",
-         "繁体中文", "俄语"},
+         "繁体中文", "俄语", "法语", "西班牙语", "德语", "葡萄牙语"},
         {"系統", "義大利語", "英語", "日語", "韓語", "簡體中文",
-         "繁體中文", "俄語"},
+         "繁體中文", "俄語", "法語", "西班牙語", "德語", "葡萄牙語"},
         {"Система", "Итальянский", "Английский", "Японский", "Корейский",
-         "Китайский упрощённый", "Китайский традиционный", "Русский"},
+         "Китайский упрощённый", "Китайский традиционный", "Русский",
+         "Французский", "Испанский", "Немецкий", "Португальский"},
+        {"Système", "Italien", "Anglais", "Japonais", "Coréen",
+         "Chinois simplifié", "Chinois traditionnel", "Russe", "Français",
+         "Espagnol", "Allemand", "Portugais"},
+        {"Sistema", "Italiano", "Inglés", "Japonés", "Coreano",
+         "Chino simplificado", "Chino tradicional", "Ruso", "Francés",
+         "Español", "Alemán", "Portugués"},
+        {"System", "Italienisch", "Englisch", "Japanisch", "Koreanisch",
+         "Vereinfachtes Chinesisch", "Traditionelles Chinesisch", "Russisch",
+         "Französisch", "Spanisch", "Deutsch", "Portugiesisch"},
+        {"Sistema", "Italiano", "Inglês", "Japonês", "Coreano",
+         "Chinês simplificado", "Chinês tradicional", "Russo", "Francês",
+         "Espanhol", "Alemão", "Português"},
     };
     return names[static_cast<int>(g_language)][setting];
 }
@@ -363,6 +614,10 @@ const char *ui_language_http_tag() {
     case Language::ChineseSimplified: return "zh-CN,en";
     case Language::ChineseTraditional: return "zh-TW,en";
     case Language::Russian: return "ru,en";
+    case Language::French: return "fr,en";
+    case Language::Spanish: return "es,en";
+    case Language::German: return "de,en";
+    case Language::Portuguese: return "pt,en";
     case Language::English: return "en";
     }
     return "en";
@@ -376,6 +631,10 @@ unsigned int ui_language_ime_mask() {
     case Language::ChineseSimplified: return SCE_IME_LANGUAGE_SIMPLIFIED_CHINESE;
     case Language::ChineseTraditional: return SCE_IME_LANGUAGE_TRADITIONAL_CHINESE;
     case Language::Russian: return SCE_IME_LANGUAGE_RUSSIAN;
+    case Language::French: return SCE_IME_LANGUAGE_FRENCH;
+    case Language::Spanish: return SCE_IME_LANGUAGE_SPANISH;
+    case Language::German: return SCE_IME_LANGUAGE_GERMAN;
+    case Language::Portuguese: return SCE_IME_LANGUAGE_PORTUGUESE;
     case Language::English: return SCE_IME_LANGUAGE_ENGLISH;
     }
     return SCE_IME_LANGUAGE_ENGLISH;

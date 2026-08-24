@@ -19,7 +19,9 @@ complete corresponding license texts and source provenance.
 - pthread-embedded — LGPL-2.1 with Vita-specific terms in VitaSDK.
 - Natural Earth `ne_10m_populated_places_simple` 5.1.2 — public-domain
   populated-place data used to generate the compact native local-search index;
-  source: https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-populated-places/
+  source and terms:
+  https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-populated-places/
+  and https://www.naturalearthdata.com/about/terms-of-use/.
 
 Map data is © OpenStreetMap contributors and is subject to the
 [OpenStreetMap copyright terms](https://www.openstreetmap.org/copyright) and
@@ -28,6 +30,8 @@ Community raster styles additionally retain their own attribution and terms:
 CyclOSM and the OSM France/Humanitarian renderings are credited in the native
 map overlay and documented in the project README.
 
-The application icon uses Earth imagery without NASA identifiers or logos.
-NASA should be acknowledged as the source; see the official
+The application icon is derived from NASA's Apollo 17 “Blue Marble” photograph
+AS17-148-22727. Image credit: NASA Johnson Space Center. The icon contains no
+NASA identifier or logo and does not imply NASA endorsement. See the official
+[image source](https://science.nasa.gov/resource/the-blue-marble/) and
 [NASA image and media usage guidelines](https://www.nasa.gov/nasa-brand-center/images-and-media/).
