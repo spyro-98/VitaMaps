@@ -1,0 +1,9 @@
+/build/
+/build-debug/
+/build-*/
+/.cache/
+.DS_Store
+compile_commands.json
+*.vpk
+*.self
+*.elf

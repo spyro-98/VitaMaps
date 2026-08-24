@@ -1,0 +1,3 @@
+[submodule "external/vita-https"]
+	path = external/vita-https
+	url = https://github.com/spyro-98/vita-https.git

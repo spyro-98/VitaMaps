@@ -1,0 +1,9 @@
+#pragma once
+
+#define VITAMAPS_DATA_DIR "ux0:data/VitaMaps"
+#define VITAMAPS_CACHE_DIR VITAMAPS_DATA_DIR "/cache"
+#define VITAMAPS_SETTINGS_PATH VITAMAPS_DATA_DIR "/settings.bin"
+#define VITAMAPS_PIN_COLLECTIONS_PATH VITAMAPS_DATA_DIR "/pin_collections.bin"
+#define VITAMAPS_GEOCODE_CACHE_DIR VITAMAPS_DATA_DIR "/search_cache"
+#define VITAMAPS_GEOCODER_ENDPOINT_PATH VITAMAPS_DATA_DIR "/geocoder_url.txt"
+#define VITAMAPS_SESSION_LOG_PATH VITAMAPS_DATA_DIR "/session_log.txt"

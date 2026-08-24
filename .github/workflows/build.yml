@@ -1,0 +1,102 @@
+name: Build VPK
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vitamaps-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-audit:
+    name: Public source guardrails
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Validate tracked source
+        shell: bash
+        run: |
+          git diff-tree --check --root HEAD
+          test -z "$(git ls-files '*.vpk' '*.self' '*.elf')"
+          ! git grep -InE 'BEGIN (RSA|OPENSSH|EC) PRIVATE KEY|github_pat_|ghp_[A-Za-z0-9]{20,}|AIza[0-9A-Za-z_-]{20,}' -- src tools CMakeLists.txt assets sce_sys
+          find tools -maxdepth 1 -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
+
+      - name: Test coordinate and geometry core
+        run: ./tools/check-mercator.sh
+
+  build:
+    name: VitaSDK Release build
+    runs-on: ubuntu-latest
+    container:
+      image: vitasdk/vitasdk:latest
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Check out source and HTTPS submodule
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Install host build tools
+        run: |
+          apk add --no-cache \
+            build-base ca-certificates cmake curl git patch pkgconf \
+            tar unzip xz bzip2
+
+      - name: Install missing Vita port libraries
+        run: |
+          vita_lib="$VITASDK/arm-vita-eabi/lib"
+          missing=0
+          for archive in \
+            libvita2d.a libfreetype.a libjpeg.a libpng.a libbz2.a libz.a \
+            libmbedtls.a libmbedx509.a libmbedcrypto.a libzstd.a; do
+            if [[ ! -f "$vita_lib/$archive" ]]; then
+              missing=1
+              break
+            fi
+          done
+          if [[ "$missing" == 1 ]]; then
+            git clone --depth 1 https://github.com/vitasdk/vdpm.git "$RUNNER_TEMP/vdpm"
+            "$RUNNER_TEMP/vdpm/vdpm" \
+              libvita2d freetype libpng libjpeg-turbo zlib bzip2 mbedtls zstd
+          fi
+
+      - name: Restore pinned HTTPS stack
+        id: https-cache
+        uses: actions/cache@v5
+        with:
+          path: external/vita-https/build/deps/curl-mbedtls
+          key: curl-mbedtls-${{ hashFiles('external/vita-https/tools/build-curl-mbedtls.sh', 'external/vita-https/patches/mbedtls-vita.patch') }}
+
+      - name: Build pinned HTTPS stack
+        if: steps.https-cache.outputs.cache-hit != 'true'
+        run: ./external/vita-https/tools/build-curl-mbedtls.sh
+
+      - name: Configure Release build
+        run: cmake -S . -B build-ci -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build VPK
+        run: cmake --build build-ci --parallel 2
+
+      - name: Validate package and optimization flags
+        run: |
+          unzip -t build-ci/VitaMaps.vpk
+          grep -q -- '-O3' build-ci/CMakeFiles/VitaMaps.dir/flags.make
+
+      - name: Upload VPK artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: VitaMaps-VPK
+          path: build-ci/VitaMaps.vpk
+          if-no-files-found: error
