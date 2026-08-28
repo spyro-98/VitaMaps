@@ -1,5 +1,9 @@
 # VitaMaps 01.23 public beta
 
+For a detailed description of every subsystem, see the
+[feature guide](FEATURES.md). For the full input reference, see
+[controls](CONTROLS.md).
+
 VitaMaps is a native PlayStation Vita map viewer built with VitaSDK and vita2d.
 It renders raster map tiles directly on the GPU and does not use a WebView,
 HTML, JavaScript, or a browser as its map engine.
