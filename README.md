@@ -10,7 +10,7 @@ VitaMaps is a native, GPU-rendered map viewer and cache explorer for
 PlayStation Vita homebrew. It uses VitaSDK and vita2d directly—there is no
 WebView, embedded browser, HTML, or JavaScript map engine.
 
-- **Version:** 01.23 public beta
+- **Version:** 1.0.0 (`APP_VER 01.00` on PS Vita)
 - **Title ID:** `VMAP00001`
 - **License:** [GPL-3.0-only](LICENSE)
 - **Networking:** [spyro-98/vita-https](https://github.com/spyro-98/vita-https)
@@ -147,7 +147,7 @@ cmake --build build-debug --parallel 4
 | [Feature guide](docs/FEATURES.md) | Map engine, layered atlas, caching, lists, search, GPX, hiking, UI, localization, and diagnostics |
 | [Controls](docs/CONTROLS.md) | Complete map, atlas, list, GPX, Settings, and global input reference |
 | [Architecture](docs/ARCHITECTURE.md) | Threading, coordinate spaces, tile state machine, scheduling, cache budgets, GPU ownership, and extension points |
-| [Public beta guide](docs/PUBLIC_BETA.md) | Installation, privacy, testing priorities, diagnostics, and known limitations |
+| [Release guide](docs/PUBLIC_BETA.md) | Installation, privacy, testing priorities, diagnostics, and known limitations |
 | [Changelog](CHANGELOG.md) | Version history and release boundary |
 | [Third-party notices](THIRD_PARTY_NOTICES.md) | Libraries, services, map data, fonts, and image attribution |
 
@@ -160,7 +160,7 @@ cmake --build build-debug --parallel 4
 - Pin geometry provides direct distance and area measurements, not road routing
   or turn-by-turn navigation.
 - Community tile and search services are best-effort and may rate-limit or fail.
-- Release and Debug 01.23 VPKs pass local VitaSDK build/package validation, but
+- Release and Debug 1.0.0 VPKs pass local VitaSDK build/package validation, but
   the exact package still requires broad physical-console testing.
 
 ## License and attribution

@@ -16,6 +16,9 @@
 #ifndef VITAMAPS_BUILD_LABEL
 #define VITAMAPS_BUILD_LABEL "Unknown"
 #endif
+#ifndef VITAMAPS_VERSION_NAME
+#define VITAMAPS_VERSION_NAME "Unknown"
+#endif
 
 namespace vitamaps {
 
@@ -38,8 +41,9 @@ bool App::initialize() {
     // Before the first frame, use the compile-time default without touching
     // ux0. If graphics fails, a Debug build can still persist the fatal log.
     log_set_disk_enabled(preferences_debug_default());
-    log_printf("VitaMaps bootstrap build=%s default_disk_logs=%d",
-               VITAMAPS_BUILD_LABEL, log_disk_enabled() ? 1 : 0);
+    log_printf("VitaMaps bootstrap version=%s build=%s default_disk_logs=%d",
+               VITAMAPS_VERSION_NAME, VITAMAPS_BUILD_LABEL,
+               log_disk_enabled() ? 1 : 0);
 
     const int graphics = vita2d_init();
     log_printf("vita2d_init -> 0x%08X context=%p framebuffer=%p",

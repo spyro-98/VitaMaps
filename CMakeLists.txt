@@ -9,7 +9,7 @@ if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   endif()
 endif()
 
-project(VitaMaps VERSION 0.1.0 LANGUAGES C CXX)
+project(VitaMaps VERSION 1.0.0 LANGUAGES C CXX)
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
@@ -19,7 +19,7 @@ include("${VITASDK}/share/vita.cmake" REQUIRED)
 
 set(VITA_APP_NAME "VitaMaps")
 set(VITA_TITLEID "VMAP00001")
-set(VITA_VERSION "01.23")
+set(VITA_VERSION "01.00")
 
 set(VITAMAPS_HTTPS_PACKAGE
     "${CMAKE_CURRENT_SOURCE_DIR}/external/vita-https"
@@ -82,6 +82,7 @@ target_compile_options(${PROJECT_NAME} PRIVATE
   $<$<CONFIG:Release>:-DNDEBUG>
   $<$<CONFIG:Debug>:-g3>)
 target_compile_definitions(${PROJECT_NAME} PRIVATE
+  VITAMAPS_VERSION_NAME="${PROJECT_VERSION}"
   $<$<CONFIG:Debug>:VITAMAPS_DEBUG_BUILD=1>
   $<$<CONFIG:Debug>:VITAMAPS_BUILD_LABEL="Debug">
   $<$<CONFIG:Release>:VITAMAPS_BUILD_LABEL="Release">)

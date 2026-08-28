@@ -1,6 +1,6 @@
 # VitaMaps feature guide
 
-This document describes the current VitaMaps 01.23 public-beta functionality.
+This document describes the current VitaMaps 1.0.0 functionality.
 For implementation contracts, memory budgets, and state transitions, read
 [ARCHITECTURE.md](ARCHITECTURE.md). For every input mapping, read
 [CONTROLS.md](CONTROLS.md).
@@ -107,7 +107,7 @@ It now shows at a glance which geographic areas and zoom depths are already
 available locally. It also provides a concrete interface for evaluating a
 future deliberate area/zoom download workflow.
 
-That downloader does not exist in 01.23. The atlas never expands coverage,
+That downloader does not exist in 1.0.0. The atlas never expands coverage,
 fills holes, or claims that a city or route is completely available offline.
 
 ## Cache hierarchy

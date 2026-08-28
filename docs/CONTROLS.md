@@ -1,6 +1,6 @@
 # VitaMaps controls
 
-This is the complete VitaMaps 01.23 input reference. Button legends inside the
+This is the complete VitaMaps 1.0.0 input reference. Button legends inside the
 application change with the active screen and mode.
 
 ## Global

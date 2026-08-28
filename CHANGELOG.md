@@ -1,17 +1,18 @@
 # Changelog
 
-All notable user-facing changes to VitaMaps are documented here. Vita package
-versions use the two-part format shown in LiveArea and the VPK metadata.
+All notable user-facing changes to VitaMaps are documented here. Public releases
+use semantic versioning. PS Vita LiveArea/VPK metadata uses a two-part
+`APP_VER`, so release `1.0.0` is embedded as `01.00`.
 
-## 01.23 - Public beta
+## 1.0.0 - Initial public release
 
 ### Highlights
 
-- Promotes VitaMaps to a documented public beta.
+- Publishes the first documented VitaMaps release.
 - Presents the Offline Atlas explicitly as a beta cache-level visualizer.
 - Adds the NASA Johnson Space Center image credit for the Apollo 17 “Blue
   Marble” application icon to the native Settings screen and README.
-- Includes a public beta guide with installation, privacy, diagnostics, known
+- Includes a release guide with installation, privacy, diagnostics, known
   limitations, and a bug-report checklist.
 
 ### Offline Atlas beta
@@ -22,18 +23,18 @@ layers grouped by style and zoom, so coverage and zoom depth can be inspected
 instead of inferred from directory names.
 
 This experiment also helps evaluate a possible future workflow for downloading
-a selected area at multiple zoom levels. Version 01.23 does not implement that
+a selected area at multiple zoom levels. Version 1.0.0 does not implement that
 workflow: the atlas is cache-only, never bulk-downloads or fills missing tiles,
 and shows only data accumulated through normal map browsing.
 
 ### Release boundary
 
 Release and Debug builds and VPK packaging are validated locally with VitaSDK.
-The exact 01.23 package still requires a complete physical-console pass. Local
+The exact 1.0.0 package still requires broad physical-console coverage. Local
 build success is not presented as proof of network, input, GPU, or persistence
 behavior on every Vita configuration.
 
-## 01.22
+## Pre-release milestone 01.22
 
 - Added per-layer geographic scaling and continuous camera-derived requests to
   make deep cached zoom layers readable and reachable.
@@ -41,5 +42,5 @@ behavior on every Vita configuration.
 - Moved provider attribution away from bottom-right controls when the HUD is
   visible and into a compact status strip when it is hidden.
 
-For the detailed milestone history from 01.03 onward, see the
-[project status section](README.md#project-status) in the README.
+Earlier `01.xx` values were internal PS Vita package milestones before the
+public semantic-versioning baseline.

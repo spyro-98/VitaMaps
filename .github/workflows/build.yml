@@ -95,6 +95,8 @@ jobs:
         run: |
           unzip -t build-ci/VitaMaps.vpk
           grep -q -- '-O3' build-ci/CMakeFiles/VitaMaps.dir/flags.make
+          unzip -p build-ci/VitaMaps.vpk sce_sys/param.sfo \
+            | strings | grep -qx '01.00'
 
       - name: Upload VPK artifact
         uses: actions/upload-artifact@v7

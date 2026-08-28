@@ -1,4 +1,4 @@
-# VitaMaps 01.23 public beta
+# VitaMaps 1.0.0 release guide
 
 For a detailed description of every subsystem, see the
 [feature guide](FEATURES.md). For the full input reference, see
@@ -8,9 +8,8 @@ VitaMaps is a native PlayStation Vita map viewer built with VitaSDK and vita2d.
 It renders raster map tiles directly on the GPU and does not use a WebView,
 HTML, JavaScript, or a browser as its map engine.
 
-This is a public beta. It is ready for wider testing, but some systems remain
-experimental and the exact 01.23 package still needs broad physical-hardware
-coverage.
+VitaMaps 1.0.0 is the first public release. Some systems remain experimental,
+and the exact package still benefits from broad physical-hardware coverage.
 
 ## What to test
 
@@ -35,7 +34,7 @@ then displaying them as navigable 3D layers on the Vita.
 
 The experiment is also useful for evaluating whether a future offline feature
 could let a user select an area and download only the necessary zoom levels.
-That download system is not included in 01.23. The current atlas:
+That download system is not included in 1.0.0. The current atlas:
 
 - reads only tiles already collected during ordinary browsing;
 - never starts provider downloads while exploring the atlas;
