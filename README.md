@@ -1,3 +1,9 @@
+<p align="center">
+  <img src="sce_sys/icon0.png"
+       alt="VitaMaps application icon showing Earth from space"
+       width="128" height="128">
+</p>
+
 # VitaMaps
 
 VitaMaps is a native, GPU-rendered map viewer and cache explorer for
