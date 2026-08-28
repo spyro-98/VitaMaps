@@ -50,9 +50,11 @@ jobs:
 
       - name: Install host build tools
         run: |
-          apk add --no-cache \
-            build-base ca-certificates cmake curl git patch pkgconf \
-            tar unzip xz bzip2
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            build-essential ca-certificates cmake curl git patch pkgconf \
+            tar unzip xz-utils bzip2
+          rm -rf /var/lib/apt/lists/*
 
       - name: Install missing Vita port libraries
         run: |
