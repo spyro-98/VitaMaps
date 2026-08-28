@@ -20,6 +20,7 @@ public:
                                  int y) const = 0;
     virtual int style_count() const = 0;
     virtual int style_index() const = 0;
+    virtual std::uint32_t style_id(int index) const = 0;
     virtual const char *style_name(int index) const = 0;
     virtual bool set_style(int index) = 0;
 };

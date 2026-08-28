@@ -30,7 +30,7 @@ std::uint32_t ui_fade_color(std::uint32_t color, float opacity);
 
 // VitaMaps' focus language is a restrained cartographic locator glow. It is
 // drawn behind a row/card so the content stays sharp while the focus visibly
-// travels between targets, matching VitaTube's physical selector model.
+// travels between targets, matching VitaWave's physical selector model.
 void ui_draw_focus_glow(float x, float y, float width, float height,
                         std::uint32_t accent, double animation_seconds,
                         float press_emphasis = 0.0F,

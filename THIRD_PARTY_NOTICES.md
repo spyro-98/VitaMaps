@@ -28,7 +28,16 @@ Map data is © OpenStreetMap contributors and is subject to the
 [tile usage policy](https://operations.osmfoundation.org/policies/tiles/).
 Community raster styles additionally retain their own attribution and terms:
 CyclOSM and the OSM France/Humanitarian renderings are credited in the native
-map overlay and documented in the project README.
+map overlay and documented in the project README. OpenTopoMap is credited in
+the same mandatory overlay; its rendered map is distributed under CC BY-SA 3.0
+and combines OpenStreetMap data with SRTM/Copernicus elevation sources. See
+https://dev.opentopomap.org/about.
+
+Hiking elevation profiles use the Open-Meteo Elevation API and Copernicus
+GLO-90 elevation data. The source is credited in the native list screen and is
+documented at https://open-meteo.com/en/docs/elevation-api. Nearby points of
+interest are returned by the public OpenStreetMap Overpass API; OpenStreetMap
+attribution remains visible in the map renderer.
 
 The application icon is derived from NASA's Apollo 17 “Blue Marble” photograph
 AS17-148-22727. Image credit: NASA Johnson Space Center. The icon contains no

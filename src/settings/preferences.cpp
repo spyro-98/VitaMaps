@@ -18,8 +18,11 @@ constexpr std::uint32_t kHudAlwaysVisible = 1U << 1U;
 constexpr std::uint32_t kCrosshair = 1U << 2U;
 // Absence means metric units.
 constexpr std::uint32_t kImperialUnits = 1U << 3U;
-// Absence keeps the VitaTube-style motion system enabled by default.
+// Absence keeps the VitaWave-style motion system enabled by default.
 constexpr std::uint32_t kReduceMotion = 1U << 4U;
+// Absence keeps the map scale coupled to HUD visibility.
+constexpr std::uint32_t kScaleAlwaysVisible = 1U << 5U;
+constexpr std::uint32_t kHikingMode = 1U << 6U;
 constexpr unsigned int kMapStyleShift = 8U;
 constexpr std::uint32_t kMapStyleMask = 0x0FU << kMapStyleShift;
 constexpr unsigned int kUiLanguageShift = 12U;
@@ -240,6 +243,22 @@ int preferences_set_hud_auto_hide(bool enabled) {
     return result;
 }
 
+bool preferences_scale_always_visible() {
+    if (!g_loaded) preferences_init();
+    return (g_flags & kScaleAlwaysVisible) != 0;
+}
+
+int preferences_set_scale_always_visible(bool enabled) {
+    if (!g_loaded) preferences_init();
+    const std::uint32_t next = enabled
+        ? (g_flags | kScaleAlwaysVisible)
+        : (g_flags & ~kScaleAlwaysVisible);
+    if (next == g_flags) return 0;
+    const int result = persist(next);
+    if (result == 0) g_flags = next;
+    return result;
+}
+
 bool preferences_crosshair_enabled() {
     if (!g_loaded) preferences_init();
     return (g_flags & kCrosshair) != 0;
@@ -279,6 +298,21 @@ int preferences_set_reduce_motion(bool enabled) {
     if (!g_loaded) preferences_init();
     const std::uint32_t next =
         enabled ? (g_flags | kReduceMotion) : (g_flags & ~kReduceMotion);
+    if (next == g_flags) return 0;
+    const int result = persist(next);
+    if (result == 0) g_flags = next;
+    return result;
+}
+
+bool preferences_hiking_mode() {
+    if (!g_loaded) preferences_init();
+    return (g_flags & kHikingMode) != 0;
+}
+
+int preferences_set_hiking_mode(bool enabled) {
+    if (!g_loaded) preferences_init();
+    const std::uint32_t next =
+        enabled ? (g_flags | kHikingMode) : (g_flags & ~kHikingMode);
     if (next == g_flags) return 0;
     const int result = persist(next);
     if (result == 0) g_flags = next;

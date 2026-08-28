@@ -6,6 +6,7 @@
 #include <psp2/rtc.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
@@ -15,23 +16,18 @@ namespace vitamaps {
 namespace {
 constexpr std::size_t kMaximumTileBytes = 4U * 1024U * 1024U;
 
-constexpr std::uint64_t kMinimumCacheSeconds = 7U * 24U * 60U * 60U;
-
-bool cache_time(const SceDateTime &modified, std::uint64_t &tick,
-                bool &protected_by_ttl) {
+bool cache_time(const SceDateTime &accessed, const SceDateTime &modified,
+                std::uint64_t &tick) {
+    SceRtcTick access_tick{};
     SceRtcTick file_tick{};
-    SceRtcTick current_tick{};
-    if (sceRtcGetTick(&modified, &file_tick) < 0 ||
-        sceRtcGetCurrentTick(&current_tick) < 0) {
+    const bool have_access = sceRtcGetTick(&accessed, &access_tick) >= 0;
+    const bool have_modified = sceRtcGetTick(&modified, &file_tick) >= 0;
+    if (!have_access && !have_modified) {
         tick = 0;
-        protected_by_ttl = true;
         return false;
     }
-    tick = file_tick.tick;
-    const std::uint64_t lifetime =
-        kMinimumCacheSeconds * sceRtcGetTickResolution();
-    protected_by_ttl = current_tick.tick <= file_tick.tick ||
-                       current_tick.tick - file_tick.tick < lifetime;
+    tick = std::max(have_access ? access_tick.tick : 0U,
+                    have_modified ? file_tick.tick : 0U);
     return true;
 }
 
@@ -88,6 +84,11 @@ bool DiskCache::read(const TileKey &key,
         offset += static_cast<std::size_t>(count);
     }
     sceIoClose(file);
+    // Refresh only metadata: a successful offline read is real LRU use and
+    // must not rewrite the PNG payload or consume extra flash cycles.
+    SceIoStat touched{};
+    if (sceRtcGetCurrentClock(&touched.st_atime, 0) >= 0)
+        sceIoChstat(path.c_str(), &touched, SCE_CST_AT);
     return true;
 }
 
@@ -102,23 +103,6 @@ bool DiskCache::write(const TileKey &key,
     std::uint64_t previous_size =
         sceIoGetstat(path.c_str(), &previous_stat) >= 0
             ? static_cast<std::uint64_t>(previous_stat.st_size) : 0U;
-    if (provider_bytes_.find(key.provider) == provider_bytes_.end())
-        enforce_provider_budget(key.provider);
-    std::uint64_t current = provider_bytes_[key.provider];
-    const std::uint64_t retained = current >= previous_size
-        ? current - previous_size : 0U;
-    if (retained + bytes.size() > budget_bytes_) {
-        enforce_provider_budget(key.provider);
-        std::memset(&previous_stat, 0, sizeof(previous_stat));
-        previous_size = sceIoGetstat(path.c_str(), &previous_stat) >= 0
-            ? static_cast<std::uint64_t>(previous_stat.st_size) : 0U;
-        current = provider_bytes_[key.provider];
-        const std::uint64_t refreshed = current >= previous_size
-            ? current - previous_size : 0U;
-        // Recent provider tiles are protected for seven days. Do not exceed
-        // the per-style cap just to admit a new entry when none is evictable.
-        if (refreshed + bytes.size() > budget_bytes_) return false;
-    }
     const std::string temporary = path + ".part";
     sceIoRemove(temporary.c_str());
     const SceUID file = sceIoOpen(temporary.c_str(),
@@ -133,8 +117,15 @@ bool DiskCache::write(const TileKey &key,
         if (count <= 0) break;
         offset += static_cast<std::size_t>(count);
     }
-    sceIoClose(file);
-    if (offset != bytes.size()) {
+    const int sync_result = offset == bytes.size()
+        ? sceIoSyncByFd(file, 0) : -1;
+    const int close_result = sceIoClose(file);
+    if (offset != bytes.size() || sync_result < 0 || close_result < 0) {
+        sceIoRemove(temporary.c_str());
+        return false;
+    }
+    if (!reserve_provider_space(key.provider, path, previous_size,
+                                static_cast<std::uint64_t>(bytes.size()))) {
         sceIoRemove(temporary.c_str());
         return false;
     }
@@ -143,7 +134,7 @@ bool DiskCache::write(const TileKey &key,
         sceIoRemove(temporary.c_str());
         return false;
     }
-    current = provider_bytes_[key.provider];
+    const std::uint64_t current = provider_bytes_[key.provider];
     provider_bytes_[key.provider] =
         (current >= previous_size ? current - previous_size : 0U) +
         static_cast<std::uint64_t>(bytes.size());
@@ -173,11 +164,24 @@ void DiskCache::scan_directory(const std::string &path, int depth,
                 const std::size_t length = child.size();
                 if (length >= 4 && child.compare(length - 4, 4, ".png") == 0) {
                     std::uint64_t modified = 0;
-                    bool protected_by_ttl = true;
-                    cache_time(item.d_stat.st_mtime, modified, protected_by_ttl);
-                    entries.push_back({child,
-                        static_cast<std::uint64_t>(item.d_stat.st_size),
-                        modified, protected_by_ttl});
+                    cache_time(item.d_stat.st_atime, item.d_stat.st_mtime,
+                               modified);
+                    Entry entry;
+                    entry.path = child;
+                    entry.size = static_cast<std::uint64_t>(item.d_stat.st_size);
+                    entry.modified = modified;
+                    unsigned int provider = 0;
+                    int zoom = 0;
+                    int x = 0;
+                    int y = 0;
+                    const char *relative = child.c_str() + root_.size();
+                    if (std::sscanf(relative, "/%u/%d/%d/%d.png", &provider,
+                                    &zoom, &x, &y) == 4 && zoom >= 0 &&
+                        zoom <= 22 && x >= 0 && y >= 0) {
+                        entry.key = {provider, zoom, x, y};
+                        entry.tile_key_valid = true;
+                    }
+                    entries.push_back(std::move(entry));
                 }
             }
         }
@@ -197,10 +201,37 @@ std::uint64_t DiskCache::enforce_entries_budget(
               });
     for (const auto &entry : entries) {
         if (total <= budget_bytes_) break;
-        if (entry.protected_by_ttl) continue;
         if (sceIoRemove(entry.path.c_str()) >= 0) total -= entry.size;
     }
     return total;
+}
+
+bool DiskCache::reserve_provider_space(
+    std::uint32_t provider, const std::string &replacement_path,
+    std::uint64_t replacement_size, std::uint64_t incoming_size) {
+    if (incoming_size > budget_bytes_) return false;
+    char path[256];
+    std::snprintf(path, sizeof(path), "%s/%u", root_.c_str(), provider);
+    std::vector<Entry> entries;
+    scan_directory(path, 0, entries);
+    std::uint64_t total = 0;
+    for (const auto &entry : entries) total += entry.size;
+    replacement_size = std::min(replacement_size, total);
+    std::uint64_t final_size = total - replacement_size + incoming_size;
+    std::sort(entries.begin(), entries.end(),
+              [](const Entry &left, const Entry &right) {
+                  return left.modified < right.modified;
+              });
+    for (const auto &entry : entries) {
+        if (final_size <= budget_bytes_) break;
+        if (entry.path == replacement_path) continue;
+        if (sceIoRemove(entry.path.c_str()) >= 0) {
+            total -= entry.size;
+            final_size -= entry.size;
+        }
+    }
+    provider_bytes_[provider] = total;
+    return final_size <= budget_bytes_;
 }
 
 void DiskCache::enforce_provider_budget(std::uint32_t provider) {
@@ -213,7 +244,7 @@ void DiskCache::enforce_provider_budget(std::uint32_t provider) {
 
 void DiskCache::enforce_budget() {
     // This method is called by the tile worker. Each style/provider owns an
-    // independent 96 MiB namespace; one style can never evict another.
+    // independent namespace; one style can never evict another.
     sceIoMkdir("ux0:data/VitaMaps", 0777);
     sceIoMkdir(root_.c_str(), 0777);
     provider_bytes_.clear();
@@ -253,6 +284,82 @@ DiskCacheStatus DiskCache::status() const {
         std::memset(&item, 0, sizeof(item));
     }
     sceIoDclose(directory);
+    return result;
+}
+
+OfflineAtlasSnapshot DiskCache::atlas() const {
+    OfflineAtlasSnapshot result;
+    std::vector<Entry> entries;
+    scan_directory(root_, 0, entries);
+    entries.erase(std::remove_if(entries.begin(), entries.end(),
+                 [](const Entry &entry) { return !entry.tile_key_valid; }),
+                 entries.end());
+    std::sort(entries.begin(), entries.end(),
+              [](const Entry &left, const Entry &right) {
+                  if (left.key.provider != right.key.provider)
+                      return left.key.provider < right.key.provider;
+                  if (left.key.zoom != right.key.zoom)
+                      return left.key.zoom < right.key.zoom;
+                  if (left.key.y != right.key.y)
+                      return left.key.y < right.key.y;
+                  return left.key.x < right.key.x;
+              });
+    for (const Entry &entry : entries) {
+        if (result.layers.empty() ||
+            result.layers.back().provider != entry.key.provider ||
+            result.layers.back().zoom != entry.key.zoom) {
+            result.layers.push_back({});
+            result.layers.back().provider = entry.key.provider;
+            result.layers.back().zoom = entry.key.zoom;
+        }
+        OfflineAtlasLayer &layer = result.layers.back();
+        const double world = std::exp2(static_cast<double>(entry.key.zoom));
+        // Bounds describe the complete cached tile footprint, not just the
+        // centers. This keeps single-tile layers visible and lets the atlas
+        // project every zoom level back onto the same Mercator reference.
+        const double minimum_x = static_cast<double>(entry.key.x) / world;
+        const double maximum_x = static_cast<double>(entry.key.x + 1) / world;
+        const double minimum_y = static_cast<double>(entry.key.y) / world;
+        const double maximum_y = static_cast<double>(entry.key.y + 1) / world;
+        layer.minimum_x = std::min(layer.minimum_x, minimum_x);
+        layer.maximum_x = std::max(layer.maximum_x, maximum_x);
+        layer.minimum_y = std::min(layer.minimum_y, minimum_y);
+        layer.maximum_y = std::max(layer.maximum_y, maximum_y);
+        ++layer.tiles;
+        layer.bytes += entry.size;
+        result.status.bytes += entry.size;
+        ++result.status.entries;
+    }
+    std::size_t entry_index = 0;
+    for (OfflineAtlasLayer &layer : result.layers) {
+        constexpr std::size_t kMaximumSamples = 220U;
+        const std::size_t stride = std::max<std::size_t>(
+            1U, (static_cast<std::size_t>(layer.tiles) +
+                 kMaximumSamples - 1U) / kMaximumSamples);
+        layer.samples.reserve(std::min<std::size_t>(layer.tiles,
+                                                    kMaximumSamples));
+        layer.tile_index.reserve(layer.tiles);
+        for (std::size_t ordinal = 0; ordinal < layer.tiles;
+             ++ordinal, ++entry_index) {
+            const Entry &entry = entries[entry_index];
+            layer.tile_index.push_back({entry.key.x, entry.key.y});
+            if (ordinal % stride != 0U) continue;
+            const double world = std::exp2(
+                static_cast<double>(entry.key.zoom));
+            layer.samples.push_back({
+                static_cast<float>((static_cast<double>(entry.key.x) + 0.5) /
+                                   world),
+                static_cast<float>((static_cast<double>(entry.key.y) + 0.5) /
+                                   world)});
+        }
+    }
+    std::uint32_t previous_provider = 0;
+    for (const auto &layer : result.layers) {
+        if (layer.provider != previous_provider) {
+            ++result.status.styles;
+            previous_provider = layer.provider;
+        }
+    }
     return result;
 }
 

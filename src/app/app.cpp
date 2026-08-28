@@ -77,6 +77,18 @@ bool App::initialize() {
         provider_.set_style(0);
         preferences_set_map_style(0);
     }
+    // OpenTopoMap is the key-free hiking style. Persisted hiking mode always
+    // restores it; directly selecting that style also enables the matching
+    // hiking tools so map semantics and controls cannot drift apart.
+    constexpr int kOpenTopoMapStyle = 4;
+    if (preferences_hiking_mode() &&
+        provider_.style_index() != kOpenTopoMapStyle) {
+        provider_.set_style(kOpenTopoMapStyle);
+        preferences_set_map_style(kOpenTopoMapStyle);
+    } else if (provider_.style_index() == kOpenTopoMapStyle &&
+               !preferences_hiking_mode()) {
+        preferences_set_hiking_mode(true);
+    }
     log_printf("map style: index=%d id=%u name=%s",
                provider_.style_index(),
                static_cast<unsigned>(provider_.id()), provider_.name());

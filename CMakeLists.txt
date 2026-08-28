@@ -19,7 +19,7 @@ include("${VITASDK}/share/vita.cmake" REQUIRED)
 
 set(VITA_APP_NAME "VitaMaps")
 set(VITA_TITLEID "VMAP00001")
-set(VITA_VERSION "01.13")
+set(VITA_VERSION "01.23")
 
 set(VITAMAPS_HTTPS_PACKAGE
     "${CMAKE_CURRENT_SOURCE_DIR}/external/vita-https"
@@ -48,6 +48,7 @@ add_executable(${PROJECT_NAME}
   src/cache/geocode_cache.cpp
   src/cache/memory_cache.cpp
   src/map/map_camera.cpp
+  src/map/gpx.cpp
   src/map/mercator.cpp
   src/map/place_lookup.cpp
   src/map/pin_collection.cpp
@@ -55,7 +56,9 @@ add_executable(${PROJECT_NAME}
   src/map/tile_manager.cpp
   src/map/tile_scheduler.cpp
   src/net/geocoder.cpp
+  src/net/elevation.cpp
   src/net/map_http.cpp
+  src/net/overpass.cpp
   src/providers/osm_provider.cpp
   src/render/image_decoder.cpp
   src/render/map_renderer.cpp
@@ -118,5 +121,7 @@ vita_create_vpk(${PROJECT_NAME}.vpk ${VITA_TITLEID}
   FILE sce_sys/icon0.png sce_sys/icon0.png
   FILE assets/fonts/Inter-Medium.ttf fonts/Inter-Medium.ttf
   FILE assets/fonts/Inter-SemiBold.ttf fonts/Inter-SemiBold.ttf
-  FILE assets/fonts/Inter-OFL.txt licenses/Inter-OFL.txt)
+  FILE assets/fonts/Inter-OFL.txt licenses/Inter-OFL.txt
+  FILE LICENSE licenses/VitaMaps-GPL-3.0.txt
+  FILE THIRD_PARTY_NOTICES.md licenses/THIRD_PARTY_NOTICES.md)
 add_dependencies(${PROJECT_NAME}.vpk-vpk ${PROJECT_NAME}.self-self)

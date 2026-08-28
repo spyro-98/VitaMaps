@@ -52,6 +52,9 @@ struct TileRequest {
     TileKey key;
     float priority{0.0F}; // Lower values are processed first.
     bool visible{false};
+    // Atlas requests are satisfied only by RAM/disk cache and must never
+    // fall through to a provider network request.
+    bool cache_only{false};
 };
 
 struct DecodedTile {

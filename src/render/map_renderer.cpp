@@ -22,7 +22,13 @@ void draw_rotated_quad(float center_x, float center_y, float width,
     const float half_width = width * 0.5F;
     const float half_height = height * 0.5F;
     constexpr float z = 0.5F;
-    vita2d_color_vertex vertices[4];
+    // vita2d_draw_array() forwards this pointer directly to GXM. Vertex data
+    // therefore has to live in vita2d's GPU-mapped pool, never on the stack.
+    auto *vertices = static_cast<vita2d_color_vertex *>(
+        vita2d_pool_malloc(sizeof(vita2d_color_vertex) * 4U));
+    if (vertices == nullptr) {
+        return;
+    }
     const float local_x[4] = {-half_width, half_width,
                               -half_width, half_width};
     const float local_y[4] = {-half_height, -half_height,
@@ -198,6 +204,17 @@ void MapRenderer::prepare(const MapCamera &camera,
         }
     }
     pump_uploads(frame, 2);
+}
+
+void MapRenderer::prepare_cache_only(
+    const std::vector<TileRequest> &requests, std::uint64_t frame) {
+    manager_.submit_requests(requests, frame);
+    for (const TileRequest &request : requests)
+        textures_.find(request.key, frame);
+    // Atlas tiles come only from RAM/disk, but texture creation still belongs
+    // to the render thread. Three uploads per frame fills the selected mosaic
+    // quickly without producing a long GXM stall.
+    pump_uploads(frame, 3);
 }
 
 bool MapRenderer::draw_parent_fallback(const TileKey &key, float center_x,

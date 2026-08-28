@@ -23,8 +23,13 @@ public:
 
     void prepare(const MapCamera &camera, const MapViewport &viewport,
                  std::uint64_t frame);
+    void prepare_cache_only(const std::vector<TileRequest> &requests,
+                            std::uint64_t frame);
     void draw(const MapCamera &camera, const MapViewport &viewport,
               std::uint64_t frame);
+    vita2d_texture *find_texture(const TileKey &key, std::uint64_t frame) {
+        return textures_.find(key, frame);
+    }
     std::size_t texture_count() const { return textures_.size(); }
     std::size_t texture_bytes() const { return textures_.used_bytes(); }
     int tile_zoom() const { return tile_zoom_; }

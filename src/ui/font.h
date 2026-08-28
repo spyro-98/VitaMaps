@@ -11,7 +11,8 @@ extern "C" {
 /* Mixed UTF-8 text rendering tuned for the Vita's native 960x544 output.
  * Latin, Greek and Cyrillic use exact-size Inter instances rendered by
  * FreeType with normal grid fitting. Japanese, Chinese and Korean use their
- * matching Vita system PGF, retaining the console's complete character sets.
+ * matching Vita system PGF with point-filtered bitmap magnification, retaining
+ * the console's complete character sets without the stock linear blur.
  * Width calculations share the exact same routing as drawing, so clipping,
  * centering and marquee animation cannot drift from the rendered pixels. */
 int ui_font_fallback_init(void);

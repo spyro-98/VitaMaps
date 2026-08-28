@@ -6,6 +6,7 @@
 #include <psp2/kernel/error.h>
 #include <psp2/kernel/threadmgr.h>
 
+#include <algorithm>
 #include <cstring>
 #include <exception>
 #include <string>
@@ -17,6 +18,18 @@ namespace {
 // accepted by the retail user process profile used by VitaMaps.
 constexpr int kTileThreadPriority = 0x10000100;
 constexpr SceSize kTileThreadStack = 0x100000;
+constexpr int kTileHttpErrorBase = -5000;
+
+int tile_http_error(long status) {
+    const long bounded = status < 0 ? 0 : std::min(status, 999L);
+    return kTileHttpErrorBase - static_cast<int>(bounded);
+}
+
+long tile_http_status(int error) {
+    if (error > kTileHttpErrorBase - 100 || error < kTileHttpErrorBase - 999)
+        return 0;
+    return static_cast<long>(kTileHttpErrorBase - error);
+}
 }
 
 TileManager::TileManager(const MapProvider &provider) : provider_(provider) {}
@@ -105,6 +118,19 @@ void TileManager::stop() {
     geocode_requested_ = false;
     geocode_in_progress_ = false;
     geocode_results_.clear();
+    std::lock_guard<SpinMutex> poi_lock(poi_mutex_);
+    poi_requested_ = false;
+    poi_in_progress_ = false;
+    poi_results_.clear();
+    std::lock_guard<SpinMutex> elevation_lock(elevation_mutex_);
+    elevation_requested_ = false;
+    elevation_in_progress_ = false;
+    elevation_points_.clear();
+    elevation_results_.clear();
+    std::lock_guard<SpinMutex> gpx_lock(gpx_mutex_);
+    gpx_requested_ = false;
+    gpx_in_progress_ = false;
+    gpx_results_.clear();
     std::lock_guard<SpinMutex> cache_lock(cache_operation_mutex_);
     cache_operation_requested_ = false;
     cache_operation_in_progress_ = false;
@@ -132,6 +158,11 @@ bool TileManager::still_wanted(const TileKey &key) const {
 void TileManager::submit_requests(const std::vector<TileRequest> &requests,
                                   std::uint64_t generation) {
     std::vector<TileRequest> queued_tasks;
+    const bool cache_only_mode = !requests.empty() &&
+        std::all_of(requests.begin(), requests.end(),
+                    [](const TileRequest &request) {
+                        return request.cache_only;
+                    });
     {
         std::lock_guard<SpinMutex> lock(state_mutex_);
         current_generation_ = generation;
@@ -176,7 +207,8 @@ void TileManager::submit_requests(const std::vector<TileRequest> &requests,
         // the look-ahead ring, but it must still yield immediately when the
         // new viewport contains a missing visible tile.
         if (active_valid_ &&
-            (!active_wanted || (!active_visible_now && visible_waiting))) {
+            (!active_wanted || (cache_only_mode && !active_cache_only_) ||
+             (!active_visible_now && visible_waiting))) {
             cancel_flag_ = 1;
         }
         if (generation % 300U == 0U) {
@@ -251,12 +283,134 @@ bool TileManager::geocode_pending() const {
     return geocode_requested_ || geocode_in_progress_;
 }
 
+bool TileManager::request_pois(const mercator::GeoPoint &center,
+                               double radius_meters) {
+    if (!started_ || !network_available_) return false;
+    {
+        std::lock_guard<SpinMutex> lock(poi_mutex_);
+        if (poi_requested_ || poi_in_progress_) return false;
+        poi_center_ = center;
+        poi_radius_meters_ = radius_meters;
+        poi_requested_ = true;
+        poi_results_.clear();
+    }
+    std::lock_guard<SpinMutex> lock(state_mutex_);
+    if (active_valid_) cancel_flag_ = 1;
+    return true;
+}
+
+bool TileManager::take_poi_result(OverpassResult &result) {
+    std::lock_guard<SpinMutex> lock(poi_mutex_);
+    if (poi_results_.empty()) return false;
+    result = std::move(poi_results_.front());
+    poi_results_.pop_front();
+    return true;
+}
+
+bool TileManager::poi_pending() const {
+    std::lock_guard<SpinMutex> lock(poi_mutex_);
+    return poi_requested_ || poi_in_progress_;
+}
+
+bool TileManager::request_elevation(
+    std::uint32_t list_id, const std::vector<mercator::GeoPoint> &points) {
+    if (!started_ || !network_available_ || list_id == 0 || points.empty() ||
+        points.size() > 64U)
+        return false;
+    {
+        std::lock_guard<SpinMutex> lock(elevation_mutex_);
+        if (elevation_requested_ || elevation_in_progress_) return false;
+        elevation_list_id_ = list_id;
+        elevation_points_ = points;
+        elevation_requested_ = true;
+        elevation_results_.clear();
+    }
+    std::lock_guard<SpinMutex> lock(state_mutex_);
+    if (active_valid_) cancel_flag_ = 1;
+    return true;
+}
+
+bool TileManager::take_elevation_result(ElevationOperationResult &result) {
+    std::lock_guard<SpinMutex> lock(elevation_mutex_);
+    if (elevation_results_.empty()) return false;
+    result = std::move(elevation_results_.front());
+    elevation_results_.pop_front();
+    return true;
+}
+
+bool TileManager::elevation_pending() const {
+    std::lock_guard<SpinMutex> lock(elevation_mutex_);
+    return elevation_requested_ || elevation_in_progress_;
+}
+
+bool TileManager::request_gpx_refresh() {
+    if (!started_) return false;
+    std::lock_guard<SpinMutex> lock(gpx_mutex_);
+    if (gpx_requested_ || gpx_in_progress_) return false;
+    gpx_request_type_ = GpxRequestType::Refresh;
+    gpx_requested_ = true;
+    gpx_results_.clear();
+    return true;
+}
+
+bool TileManager::request_gpx_import(std::size_t inbox_index,
+                                     const PinRepository &repository) {
+    if (!started_) return false;
+    std::lock_guard<SpinMutex> lock(gpx_mutex_);
+    if (gpx_requested_ || gpx_in_progress_) return false;
+    gpx_request_type_ = GpxRequestType::Import;
+    gpx_inbox_index_ = inbox_index;
+    gpx_repository_ = repository;
+    gpx_requested_ = true;
+    gpx_results_.clear();
+    return true;
+}
+
+bool TileManager::request_gpx_export(const PinList &list) {
+    if (!started_) return false;
+    std::lock_guard<SpinMutex> lock(gpx_mutex_);
+    if (gpx_requested_ || gpx_in_progress_) return false;
+    gpx_request_type_ = GpxRequestType::Export;
+    gpx_list_ = list;
+    gpx_requested_ = true;
+    gpx_results_.clear();
+    return true;
+}
+
+bool TileManager::take_gpx_result(GpxWorkerResult &result) {
+    std::lock_guard<SpinMutex> lock(gpx_mutex_);
+    if (gpx_results_.empty()) return false;
+    result = std::move(gpx_results_.front());
+    gpx_results_.pop_front();
+    return true;
+}
+
+bool TileManager::gpx_pending() const {
+    std::lock_guard<SpinMutex> lock(gpx_mutex_);
+    return gpx_requested_ || gpx_in_progress_;
+}
+
+bool TileManager::take_gpx_request(GpxRequestType &type,
+                                   std::size_t &inbox_index,
+                                   PinRepository &repository, PinList &list) {
+    std::lock_guard<SpinMutex> lock(gpx_mutex_);
+    if (!gpx_requested_) return false;
+    type = gpx_request_type_;
+    inbox_index = gpx_inbox_index_;
+    repository = std::move(gpx_repository_);
+    list = std::move(gpx_list_);
+    gpx_requested_ = false;
+    gpx_in_progress_ = true;
+    return true;
+}
+
 bool TileManager::request_cache_status() {
     if (!started_) return false;
     std::lock_guard<SpinMutex> lock(cache_operation_mutex_);
     if (cache_operation_requested_ || cache_operation_in_progress_) return false;
     cache_operation_requested_ = true;
     cache_operation_clear_ = false;
+    cache_operation_atlas_ = false;
     return true;
 }
 
@@ -268,6 +422,7 @@ bool TileManager::request_cache_clear() {
             return false;
         cache_operation_requested_ = true;
         cache_operation_clear_ = true;
+        cache_operation_atlas_ = false;
         cache_operation_results_.clear();
     }
     {
@@ -284,10 +439,21 @@ bool TileManager::request_cache_clear() {
     return true;
 }
 
+bool TileManager::request_offline_atlas() {
+    if (!started_) return false;
+    std::lock_guard<SpinMutex> lock(cache_operation_mutex_);
+    if (cache_operation_requested_ || cache_operation_in_progress_) return false;
+    cache_operation_requested_ = true;
+    cache_operation_clear_ = false;
+    cache_operation_atlas_ = true;
+    cache_operation_results_.clear();
+    return true;
+}
+
 bool TileManager::take_cache_result(TileCacheOperationResult &result) {
     std::lock_guard<SpinMutex> lock(cache_operation_mutex_);
     if (cache_operation_results_.empty()) return false;
-    result = cache_operation_results_.front();
+    result = std::move(cache_operation_results_.front());
     cache_operation_results_.pop_front();
     return true;
 }
@@ -297,10 +463,11 @@ bool TileManager::cache_operation_pending() const {
     return cache_operation_requested_ || cache_operation_in_progress_;
 }
 
-bool TileManager::take_cache_request(bool &clear) {
+bool TileManager::take_cache_request(bool &clear, bool &atlas) {
     std::lock_guard<SpinMutex> lock(cache_operation_mutex_);
     if (!cache_operation_requested_) return false;
     clear = cache_operation_clear_;
+    atlas = cache_operation_atlas_;
     cache_operation_requested_ = false;
     cache_operation_in_progress_ = true;
     return true;
@@ -319,14 +486,50 @@ bool TileManager::take_geocode_request(std::string &query,
     return true;
 }
 
+bool TileManager::take_poi_request(mercator::GeoPoint &center,
+                                   double &radius_meters) {
+    std::lock_guard<SpinMutex> lock(poi_mutex_);
+    if (!poi_requested_) return false;
+    center = poi_center_;
+    radius_meters = poi_radius_meters_;
+    poi_requested_ = false;
+    poi_in_progress_ = true;
+    return true;
+}
+
+bool TileManager::take_elevation_request(
+    std::uint32_t &list_id, std::vector<mercator::GeoPoint> &points) {
+    std::lock_guard<SpinMutex> lock(elevation_mutex_);
+    if (!elevation_requested_) return false;
+    list_id = elevation_list_id_;
+    points = std::move(elevation_points_);
+    elevation_points_.clear();
+    elevation_requested_ = false;
+    elevation_in_progress_ = true;
+    return true;
+}
+
 void TileManager::set_state(const TileKey &key, TileState state, int error) {
     std::lock_guard<SpinMutex> lock(state_mutex_);
     Record &record = records_[key];
     record.state = state;
     record.error = error;
     if (state == TileState::Failed) {
-        record.retry_after_generation = current_generation_ + 180;
+        record.failures = static_cast<std::uint8_t>(
+            std::min(8, static_cast<int>(record.failures) + 1));
+        const long http_status = tile_http_status(error);
+        std::uint64_t base_frames = 180U;
+        if (http_status == 429) base_frames = 1800U;
+        else if (http_status >= 500) base_frames = 600U;
+        const unsigned int exponent = std::min<unsigned int>(
+            record.failures > 0 ? record.failures - 1U : 0U, 4U);
+        const std::uint64_t delay = std::min<std::uint64_t>(
+            3600U, base_frames << exponent);
+        record.retry_after_generation = current_generation_ + delay;
         counters_.last_error = error;
+    } else if (state == TileState::Ready) {
+        record.failures = 0;
+        record.retry_after_generation = 0;
     }
 }
 
@@ -358,6 +561,10 @@ void TileManager::worker_main() {
             log_printf("tile worker: vita-https client creation failed");
             log_save();
         }
+        const int gpx_init_result = gpx_.initialize();
+        if (gpx_init_result < 0)
+            log_printf("gpx worker init failed: 0x%08X",
+                       static_cast<unsigned>(gpx_init_result));
         disk_cache_.enforce_budget();
         while (!stopping_) {
             std::string geocode_query;
@@ -374,18 +581,84 @@ void TileManager::worker_main() {
                 }
                 continue;
             }
+            mercator::GeoPoint poi_center;
+            double poi_radius = 0.0;
+            if (take_poi_request(poi_center, poi_radius)) {
+                cancel_flag_ = 0;
+                OverpassResult result = overpass_.search_pois(
+                    http_, poi_center, poi_radius, &cancel_flag_);
+                {
+                    std::lock_guard<SpinMutex> lock(poi_mutex_);
+                    poi_in_progress_ = false;
+                    if (!stopping_) poi_results_.push_back(std::move(result));
+                }
+                continue;
+            }
+            std::uint32_t elevation_list_id = 0;
+            std::vector<mercator::GeoPoint> elevation_points;
+            if (take_elevation_request(elevation_list_id, elevation_points)) {
+                cancel_flag_ = 0;
+                ElevationOperationResult result;
+                result.list_id = elevation_list_id;
+                result.elevation = elevation_.lookup(
+                    http_, elevation_points, &cancel_flag_);
+                {
+                    std::lock_guard<SpinMutex> lock(elevation_mutex_);
+                    elevation_in_progress_ = false;
+                    if (!stopping_)
+                        elevation_results_.push_back(std::move(result));
+                }
+                continue;
+            }
+            GpxRequestType gpx_type = GpxRequestType::Refresh;
+            std::size_t gpx_index = 0;
+            PinRepository gpx_repository;
+            PinList gpx_list;
+            if (take_gpx_request(gpx_type, gpx_index, gpx_repository,
+                                 gpx_list)) {
+                GpxWorkerResult result;
+                result.type = gpx_type;
+                if (gpx_type == GpxRequestType::Refresh) {
+                    result.operation.error = gpx_.refresh_inbox();
+                } else if (gpx_type == GpxRequestType::Import) {
+                    result.operation = gpx_.import_file(gpx_index,
+                                                        gpx_repository);
+                    if (result.operation.repository_changed) {
+                        result.repository = std::move(gpx_repository);
+                        result.repository_changed = true;
+                    }
+                } else {
+                    result.operation = gpx_.export_list(gpx_list);
+                }
+                result.inbox = gpx_.inbox();
+                result.history = gpx_.history();
+                {
+                    std::lock_guard<SpinMutex> lock(gpx_mutex_);
+                    gpx_in_progress_ = false;
+                    if (!stopping_) gpx_results_.push_back(std::move(result));
+                }
+                continue;
+            }
             bool clear_cache = false;
-            if (take_cache_request(clear_cache)) {
+            bool load_atlas = false;
+            if (take_cache_request(clear_cache, load_atlas)) {
                 TileCacheOperationResult result;
                 result.cleared = clear_cache;
+                result.atlas_loaded = load_atlas;
                 if (clear_cache) {
                     memory_cache_.clear();
                     result.error = disk_cache_.clear_all();
                 }
-                result.status = disk_cache_.status();
-                log_printf("tile cache: clear=%d error=0x%08X bytes=%llu "
+                if (load_atlas) {
+                    result.atlas = disk_cache_.atlas();
+                    result.status = result.atlas.status;
+                } else {
+                    result.status = disk_cache_.status();
+                }
+                log_printf("tile cache: clear=%d atlas=%d error=0x%08X bytes=%llu "
                            "entries=%u styles=%u",
                            clear_cache ? 1 : 0,
+                           load_atlas ? 1 : 0,
                            static_cast<unsigned>(result.error),
                            static_cast<unsigned long long>(result.status.bytes),
                            static_cast<unsigned>(result.status.entries),
@@ -394,7 +667,7 @@ void TileManager::worker_main() {
                     std::lock_guard<SpinMutex> lock(cache_operation_mutex_);
                     cache_operation_in_progress_ = false;
                     if (!stopping_)
-                        cache_operation_results_.push_back(result);
+                        cache_operation_results_.push_back(std::move(result));
                 }
                 continue;
             }
@@ -430,6 +703,7 @@ void TileManager::process_task(const ScheduledTile &task) {
         found->second.state = TileState::DiskLookup;
         active_key_ = key;
         active_valid_ = true;
+        active_cache_only_ = task.request.cache_only;
         cancel_flag_ = 0;
     }
 
@@ -456,6 +730,15 @@ void TileManager::process_task(const ScheduledTile &task) {
     }
 
     if (encoded.empty()) {
+        if (task.request.cache_only) {
+            // The atlas is an index of opportunistic cache content. A file
+            // may disappear between its scan and use because of LRU eviction,
+            // but this path must never turn that race into network traffic.
+            set_state(key, TileState::Failed, -2002);
+            std::lock_guard<SpinMutex> lock(state_mutex_);
+            active_valid_ = false;
+            return;
+        }
         if (!network_available_) {
             set_state(key, TileState::Failed, VITA_HTTPS_ERROR_NOT_INITIALIZED);
             std::lock_guard<SpinMutex> lock(state_mutex_);
@@ -468,14 +751,17 @@ void TileManager::process_task(const ScheduledTile &task) {
             provider_.tile_url(key.provider, key.zoom, key.x, key.y),
             &cancel_flag_, encoded,
             status);
-        if (result < 0 || cancel_flag_ || !still_wanted(key)) {
-            if (result < 0 && !cancel_flag_) {
+        const bool http_failed = result >= 0 &&
+            (status < 200 || status >= 300);
+        if (result < 0 || http_failed || cancel_flag_ || !still_wanted(key)) {
+            const int failure = result < 0 ? result : tile_http_error(status);
+            if ((result < 0 || http_failed) && !cancel_flag_) {
                 log_printf("tile network failed z=%d x=%d y=%d result=0x%08X http=%ld",
                            key.zoom, key.x, key.y,
                            static_cast<unsigned>(result), status);
             }
             set_state(key, cancel_flag_ ? TileState::Missing : TileState::Failed,
-                      result);
+                      failure);
             std::lock_guard<SpinMutex> lock(state_mutex_);
             active_valid_ = false;
             return;

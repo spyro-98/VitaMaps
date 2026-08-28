@@ -23,6 +23,9 @@ constexpr OsmStyle kStyles[] = {
      "https://a.tile.openstreetmap.fr/osmfr/%d/%d/%d.png", 20},
     {4U, "Humanitarian", "© OSM contributors | Humanitarian",
      "https://a.tile.openstreetmap.fr/hot/%d/%d/%d.png", 18},
+    {5U, "OpenTopoMap",
+     "© OSM contributors | SRTM/Copernicus | OpenTopoMap CC-BY-SA",
+     "https://a.tile.opentopomap.org/%d/%d/%d.png", 17},
 };
 
 const OsmStyle &style_at(int index) {
@@ -53,6 +56,10 @@ int OsmProvider::max_zoom() const {
 
 int OsmProvider::style_count() const {
     return static_cast<int>(sizeof(kStyles) / sizeof(kStyles[0]));
+}
+
+std::uint32_t OsmProvider::style_id(int index) const {
+    return style_at(index).id;
 }
 
 const char *OsmProvider::style_name(int index) const {

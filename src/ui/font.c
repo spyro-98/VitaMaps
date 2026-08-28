@@ -29,6 +29,41 @@ static int g_system_base_heights[SYSTEM_FONT_COUNT];
 static int g_system_init_attempted;
 static int g_system_language = SCE_SYSTEM_PARAM_LANG_ENGLISH_US;
 
+/* libvita2d keeps the PGF glyph atlas private, but its installed ABI starts
+ * vita2d_pgf with the font library, font list, then atlas pointer; the atlas
+ * starts with its vita2d texture.  The stock atlas uses POINT minification and
+ * LINEAR magnification.  CJK UI glyphs are cached at the PGF's native bitmap
+ * size, so LINEAR visibly blurs them whenever our 20 px/28 px UI scales them
+ * up.  Switching only these system-font atlases to POINT magnification keeps
+ * the original metrics and complete Vita glyph coverage while avoiding that
+ * second smoothing pass.
+ *
+ * Keep this prefix view deliberately minimal and validate its only offset at
+ * compile time.  VitaSDK targets 32-bit ARM; if libvita2d ever changes this
+ * prefix, the adapter must be updated together with the pinned build setup. */
+typedef struct UiFontAtlasPrefix {
+	vita2d_texture *texture;
+} UiFontAtlasPrefix;
+
+typedef struct UiPgfPrefix {
+	void *library;
+	void *font_list;
+	UiFontAtlasPrefix *atlas;
+} UiPgfPrefix;
+
+_Static_assert(sizeof(void *) == 4, "Vita PGF adapter requires 32-bit pointers");
+_Static_assert(offsetof(UiPgfPrefix, atlas) == 8,
+	           "Unexpected libvita2d PGF prefix layout");
+
+static void sharpen_system_pgf(vita2d_pgf *font) {
+	if (!font) return;
+	UiPgfPrefix *view = (UiPgfPrefix *)(void *)font;
+	if (!view->atlas || !view->atlas->texture) return;
+	vita2d_texture_set_filters(view->atlas->texture,
+	                           SCE_GXM_TEXTURE_FILTER_POINT,
+	                           SCE_GXM_TEXTURE_FILTER_POINT);
+}
+
 static int cjk_codepoint(unsigned int cp) {
 	return (cp >= 0x1100U && cp <= 0x11FFU) ||
 	       (cp >= 0x2E80U && cp <= 0x33FFU) ||
@@ -378,6 +413,7 @@ int ui_font_fallback_init(void) {
 		vita2d_system_pgf_config config = { languages[i], NULL };
 		g_system_fonts[i] = vita2d_load_system_pgf(1, &config);
 		if (!g_system_fonts[i]) continue;
+		sharpen_system_pgf(g_system_fonts[i]);
 		static const char *const probes[SYSTEM_FONT_COUNT] = {
 			"\xe6\x97\xa5",       /* Japanese: 日 */
 			"\xe5\x9b\xbd",       /* Chinese: 国 */

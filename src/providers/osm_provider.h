@@ -16,6 +16,7 @@ public:
                          int y) const override;
     int style_count() const override;
     int style_index() const override { return style_index_; }
+    std::uint32_t style_id(int index) const override;
     const char *style_name(int index) const override;
     bool set_style(int index) override;
 private:

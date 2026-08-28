@@ -15,7 +15,7 @@
 
 namespace vitamaps {
 namespace {
-constexpr std::uint32_t kVersion = 2U;
+constexpr std::uint32_t kVersion = 3U;
 constexpr std::uint32_t kMinimumSupportedVersion = 1U;
 constexpr std::uint32_t kListVisible = 1U << 0U;
 constexpr std::uint32_t kListClosed = 1U << 1U;
@@ -164,6 +164,17 @@ bool decode_payload(const std::vector<unsigned char> &bytes,
             return false;
         list.visible = (flags & kListVisible) != 0U;
         list.closed = (flags & kListClosed) != 0U;
+        if (version >= 3U) {
+            std::uint32_t color = 0;
+            std::uint32_t icon = 0;
+            if (!read_u32(bytes, offset, color) ||
+                !read_u32(bytes, offset, icon) ||
+                color >= static_cast<std::uint32_t>(PinColor::Count) ||
+                icon >= static_cast<std::uint32_t>(PinIcon::Count))
+                return false;
+            list.color = static_cast<PinColor>(color);
+            list.icon = static_cast<PinIcon>(icon);
+        }
         if (!read_u32(bytes, offset, pin_count) ||
             pin_count > kMaximumPinsPerList)
             return false;
@@ -181,6 +192,20 @@ bool decode_payload(const std::vector<unsigned char> &bytes,
                 pin.position.longitude < -180.0 ||
                 pin.position.longitude >= 180.0)
                 return false;
+            if (version >= 3U) {
+                std::uint32_t elevation_source = 0;
+                if (!read_u32(bytes, offset, elevation_source) ||
+                    !read_double(bytes, offset, pin.elevation_meters) ||
+                    elevation_source >= static_cast<std::uint32_t>(
+                        ElevationSource::Count) ||
+                    (elevation_source != 0U &&
+                     (pin.elevation_meters < -500.0 ||
+                      pin.elevation_meters > 10000.0)))
+                    return false;
+                pin.elevation_source = static_cast<ElevationSource>(
+                    elevation_source);
+                pin.has_elevation = elevation_source != 0U;
+            }
             list.pins.push_back(std::move(pin));
         }
         if (list.pins.size() < 3) list.closed = false;
@@ -273,6 +298,8 @@ int PinRepository::save() const {
         append_string(payload, list.name, kMaximumNameBytes);
         append_u32(payload, (list.visible ? kListVisible : 0U) |
                             (list.closed ? kListClosed : 0U));
+        append_u32(payload, static_cast<std::uint32_t>(list.color));
+        append_u32(payload, static_cast<std::uint32_t>(list.icon));
         append_u32(payload, static_cast<std::uint32_t>(list.pins.size()));
         for (const auto &pin : list.pins) {
             append_u32(payload, pin.id);
@@ -280,6 +307,10 @@ int PinRepository::save() const {
             append_double(payload, pin.position.longitude);
             append_string(payload, pin.name, kMaximumNameBytes);
             append_string(payload, pin.address, kMaximumAddressBytes);
+            append_u32(payload, static_cast<std::uint32_t>(
+                pin.has_elevation ? pin.elevation_source
+                                  : ElevationSource::None));
+            append_double(payload, pin.elevation_meters);
         }
     }
     if (payload.empty() || payload.size() > kMaximumPayloadBytes) return -1;
@@ -366,6 +397,18 @@ bool PinRepository::set_list_closed(std::size_t index, bool closed) {
     return true;
 }
 
+bool PinRepository::set_list_color(std::size_t index, PinColor color) {
+    if (index >= lists_.size() || color >= PinColor::Count) return false;
+    lists_[index].color = color;
+    return true;
+}
+
+bool PinRepository::set_list_icon(std::size_t index, PinIcon icon) {
+    if (index >= lists_.size() || icon >= PinIcon::Count) return false;
+    lists_[index].icon = icon;
+    return true;
+}
+
 bool PinRepository::add_pin(const mercator::GeoPoint &position,
                             const std::string &name) {
     if (active().pins.size() >= kMaximumPinsPerList) return false;
@@ -378,7 +421,8 @@ bool PinRepository::add_pin(const mercator::GeoPoint &position,
     active().pins.push_back({next_pin_id_++,
         {mercator::clamp_latitude(position.latitude),
          mercator::wrap_longitude(position.longitude)},
-        bounded_text(final_name, kMaximumNameBytes), {}});
+        bounded_text(final_name, kMaximumNameBytes), {}, 0.0, false,
+        ElevationSource::None});
     return true;
 }
 
@@ -412,6 +456,21 @@ bool PinRepository::move_pin(std::size_t list_index, std::size_t pin_index,
     if (target < 0 || target >= static_cast<std::ptrdiff_t>(pins.size()))
         return false;
     std::swap(pins[pin_index], pins[static_cast<std::size_t>(target)]);
+    return true;
+}
+
+bool PinRepository::set_pin_elevation(std::size_t list_index,
+                                      std::size_t pin_index, double meters,
+                                      ElevationSource source) {
+    if (list_index >= lists_.size() ||
+        pin_index >= lists_[list_index].pins.size() ||
+        !std::isfinite(meters) || meters < -500.0 || meters > 10000.0 ||
+        source == ElevationSource::None || source >= ElevationSource::Count)
+        return false;
+    MapPin &pin = lists_[list_index].pins[pin_index];
+    pin.elevation_meters = meters;
+    pin.has_elevation = true;
+    pin.elevation_source = source;
     return true;
 }
 
